@@ -1,0 +1,21 @@
+[run]
+source = src/words2nums
+omit =
+    */tests/*
+    */venv/*
+    setup.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    raise ImportError
+
+[coverage:report]
+precision = 2
+fail_under = 80
+
+per_file_fail_under = 80

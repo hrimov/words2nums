@@ -1,0 +1,105 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[test]
+
+      - name: Run tests with coverage
+        run: |
+          pytest -v --cov=src/words2nums --cov-report=html --cov-fail-under=80
+
+      - name: Generate coverage badge
+        run: |
+          coverage-badge -o coverage.svg -f
+
+      - name: Comment PR with coverage info
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const indexHtml = fs.readFileSync('htmlcov/index.html', 'utf8');
+
+            const totalMatch = indexHtml.match(/<span class="pc_cov">([\d.]+)%<\/span>/);
+            const totalCoverage = totalMatch ? totalMatch[1] : 'N/A';
+
+            const fileRegex = /<tr class="region">.*?<td class="name left"><a href="[^"]+">([^<]+)<\/a><\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td class="right"[^>]*>([\d.]+)%<\/td>.*?<\/tr>/gs;
+            let filesCoverage = [];
+            let match;
+
+            while ((match = fileRegex.exec(indexHtml)) !== null) {
+              const [_, file, statements, missing, excluded, coverage] = match;
+              if (!file.includes('__init__')) {
+                const shortFile = file.replace('src/words2nums/', '');
+                filesCoverage.push(`| ${shortFile} | ${statements} | ${missing} | ${coverage}% |`);
+              }
+            }
+
+            const body = `## Coverage Report
+            Total coverage: ${totalCoverage}%
+
+            ### Coverage by file
+            | File | Statements | Missing | Coverage |
+            |------|------------|---------|----------|
+            ${filesCoverage.join('\n')}
+
+            [Full coverage report available in workflow artifacts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Update README with coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if ! grep -q "!\[Coverage\]" README.md; then
+            sed -i '1 a\![Coverage](coverage.svg)' README.md
+          fi
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add coverage.svg README.md
+          git commit -m "Update coverage badge" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            htmlcov
+            coverage.xml
+            coverage.svg
+          retention-days: 7

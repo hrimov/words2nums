@@ -1,0 +1,6 @@
+[lint]
+# TODO: consider proper list of rules to select instead
+ignore = ["A003", "ANN", "D", "FA100", "FA102", "FIX", "I", "PGH003", "PGH004", "TD"]
+
+[lint.extend-per-file-ignores]
+"tests/*" = ["ARG001", "F401", "PT003", "PT004", "S"]

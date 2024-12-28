@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=74.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "words2nums"
+version = "0.1"
+readme = "README.md"
+description = "Lightweight words to number converter with several locales support"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "Andrew Hrimov", email = "andrew.hrimov@gmail.com" }]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+docs = [
+    "sphinx==8.1.3",
+    "sphinx-autodocgen==1.3",
+    "furo==2024.8.*",   
+]
+lint = [
+    "ruff==0.8.4",
+    "mypy==1.13.0",
+]
+test = [
+    "pytest==8.3.0",
+    "pytest-cov==6.0.0",
+    "coverage-badge==1.1.2",
+]
+
+[project.urls]
+"Source" = "https://github.com/hrimov/words2nums"
+"Homepage" = "https://github.com/hrimov/words2nums"
+"Documentation" = "https://github.com/hrimov/words2nums"
+"Bug Tracker" = "https://github.com/hrimov/words2nums/issues"
