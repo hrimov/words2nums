@@ -38,6 +38,10 @@ jobs:
       - name: Generate coverage badge
         run: |
           coverage-badge -f -o coverage.svg
+          sudo apt-get install -y imagemagick
+          sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+          sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
+          convert coverage.svg coverage.png
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
@@ -87,8 +91,8 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add coverage.svg
-          git commit -m "Update coverage badge" || echo "No changes to commit"
+          git add coverage.svg coverage.png
+          git commit -m "Update coverage badges" || echo "No changes to commit"
           git push origin main || echo "No changes to push"
 
       - name: Upload coverage reports
@@ -99,4 +103,5 @@ jobs:
             htmlcov
             coverage.xml
             coverage.svg
+            coverage.png
           retention-days: 7
