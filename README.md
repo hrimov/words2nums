@@ -2,9 +2,9 @@
 
 Convert word-form numbers to numerical values in Python.
 
-[![PyPI version](https://badge.fury.io/py/words2nums.svg)](https://badge.fury.io/py/words2nums)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/hrimov/words2nums/actions)
-[![Documentation Status](https://readthedocs.org/projects/words2nums/badge/?version=latest)](https://words2nums.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://img.shields.io/pypi/v/words2nums)](https://pypi.org/project/words2nums/)
+[![Coverage](coverage.svg)](https://github.com/hrimov/words2nums/blob/main/coverage.svg)
+[![Documentation Status](https://readthedocs.org/projects/words2nums/badge/?version=latest)](https://words2nums.readthedocs.io)
 
 ## Features
 
