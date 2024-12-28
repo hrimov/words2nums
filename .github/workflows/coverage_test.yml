@@ -33,11 +33,11 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest -v --cov=src/words2nums --cov-report=html --cov-fail-under=80
+          pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
       - name: Generate coverage badge
         run: |
-          coverage-badge -o coverage.svg -f
+          coverage-badge -f -o coverage.svg
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
@@ -82,17 +82,14 @@ jobs:
               body: body
             });
 
-      - name: Update README with coverage badge
+      - name: Commit and push coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if ! grep -q "!\[Coverage\]" README.md; then
-            sed -i '1 a\![Coverage](coverage.svg)' README.md
-          fi
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add coverage.svg README.md
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coverage.svg
           git commit -m "Update coverage badge" || echo "No changes to commit"
-          git push || echo "No changes to push"
+          git push origin main || echo "No changes to push"
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
