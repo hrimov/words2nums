@@ -38,10 +38,9 @@ jobs:
       - name: Generate coverage badge
         run: |
           coverage-badge -f -o coverage.svg
-          sudo apt-get install -y imagemagick
-          sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
-          sudo sed -i 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' /etc/ImageMagick-6/policy.xml
-          convert coverage.svg coverage.png
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -h 30 coverage.svg > coverage.png
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
