@@ -44,5 +44,5 @@ test = [
 [project.urls]
 "Source" = "https://github.com/hrimov/words2nums"
 "Homepage" = "https://github.com/hrimov/words2nums"
-"Documentation" = "https://github.com/hrimov/words2nums"
+"Documentation" = "https://words2nums.readthedocs.io/"
 "Bug Tracker" = "https://github.com/hrimov/words2nums/issues"
