@@ -99,8 +99,11 @@ jobs:
           git checkout ${BRANCH_NAME}
           git pull origin ${BRANCH_NAME}
           
-          sed "s|coverage-[0-9]\+%25-brightgreen|coverage-${{ steps.smokeshow.outputs.COVERAGE }}%25-brightgreen|g" README.md > README.tmp
-          sed "s|(https://smokeshow\.helpmanual\.io/[^)]*)|(${steps.smokeshow.outputs.COVERAGE_URL})|g" README.tmp > README.md
+          COVERAGE_URL="${{ steps.smokeshow.outputs.COVERAGE_URL }}"
+          COVERAGE="${{ steps.smokeshow.outputs.COVERAGE }}"
+          
+          sed "s|coverage-[0-9]\+%25-brightgreen|coverage-${COVERAGE}%25-brightgreen|g" README.md > README.tmp
+          sed "s|(https://smokeshow\.helpmanual\.io/[^)]*)|(${COVERAGE_URL})|g" README.tmp > README.md
           rm README.tmp
           
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
