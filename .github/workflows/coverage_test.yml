@@ -36,6 +36,19 @@ jobs:
         run: |
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
+      - name: Upload coverage to smokeshow
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+        id: smokeshow
+        run: |
+          pip install smokeshow
+          COVERAGE_URL=$(smokeshow upload htmlcov 2>&1 | tail -n1)
+          echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
+          
+          # Extract coverage percentage from the HTML report
+          COVERAGE=$(grep -o '<span class="pc_cov">.*%</span>' htmlcov/index.html | grep -o '[0-9]\+' | head -1)
+          echo "COVERAGE=$COVERAGE" >> "$GITHUB_OUTPUT"
+
       - name: Create coverage status
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/github-script@v7
@@ -52,21 +65,9 @@ jobs:
               sha: context.sha,
               state: 'success',
               description: `coverage ${coverage}%`,
-              context: 'coverage'
+              context: 'coverage',
+              target_url: '${{ steps.smokeshow.outputs.COVERAGE_URL }}'
             });
-
-      - name: Upload coverage to smokeshow
-        env:
-          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
-        id: smokeshow
-        run: |
-          pip install smokeshow
-          COVERAGE_URL=$(smokeshow upload htmlcov 2>&1 | tail -n1)
-          echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
-          
-          # Extract coverage percentage from the HTML report
-          COVERAGE=$(grep -o '<span class="pc_cov">.*%</span>' htmlcov/index.html | grep -o '[0-9]\+' | head -1)
-          echo "COVERAGE=$COVERAGE" >> "$GITHUB_OUTPUT"
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
