@@ -13,4 +13,4 @@ module.exports = async ({ github, context, core }) => {
     context: 'coverage',
     target_url: process.env.COVERAGE_URL
   });
-}; 
+};

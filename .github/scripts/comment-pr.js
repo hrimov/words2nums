@@ -36,4 +36,4 @@ module.exports = async ({ github, context, core }) => {
     repo: context.repo.repo,
     body: body
   });
-}; 
+};
