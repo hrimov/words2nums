@@ -35,6 +35,25 @@ jobs:
         run: |
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
+      - name: Create coverage status
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const xml = fs.readFileSync('coverage.xml', 'utf8');
+            const match = xml.match(/line-rate="([\d.]+)"/);
+            const coverage = match ? Math.round(parseFloat(match[1]) * 100) : 0;
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              description: `coverage ${coverage}%`,
+              context: 'Coverage'
+            });
+
       - name: Upload coverage to smokeshow
         env:
           SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
@@ -90,25 +109,3 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
-
-      - name: Update README badge
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-          
-          git fetch origin ${BRANCH_NAME}
-          git checkout ${BRANCH_NAME}
-          git pull origin ${BRANCH_NAME}
-          
-          COVERAGE="${{ steps.smokeshow.outputs.COVERAGE }}"
-          COVERAGE_URL="${{ steps.smokeshow.outputs.COVERAGE_URL }}"
-          
-          sed "s|coverage-[0-9]\+%25-brightgreen|coverage-${COVERAGE}%25-brightgreen|g" README.md > README.tmp
-          sed "s|smokeshow\.helpmanual\.io/[^)]*|smokeshow.helpmanual.io/${COVERAGE_URL#*helpmanual.io/}|g" README.tmp > README.md
-          rm README.tmp
-          
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add README.md
-          git commit -m "Update coverage badge" || echo "No changes to commit"
-          git push origin ${BRANCH_NAME} || echo "No changes to push"
