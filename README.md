@@ -3,7 +3,7 @@
 Convert word-form numbers to numerical values in Python.
 
 [![PyPI version](https://img.shields.io/pypi/v/words2nums)](https://pypi.org/project/words2nums/)
-[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](go to https://smokeshow.helpmanual.io/53610u0w1w012i4l3w1y/)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)(go to https://smokeshow.helpmanual.io/374m0o4r08184g1e196u/)
 [![Documentation Status](https://readthedocs.org/projects/words2nums/badge/?version=latest)](https://words2nums.readthedocs.io)
 
 ## Features
