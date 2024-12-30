@@ -92,6 +92,7 @@ jobs:
             });
 
       - name: Update README badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
           
