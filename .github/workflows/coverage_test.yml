@@ -93,6 +93,8 @@ jobs:
 
       - name: Update README badge
         run: |
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          
           sed "s|coverage-.*%25-brightgreen|coverage-${{ steps.smokeshow.outputs.COVERAGE }}%25-brightgreen|g" README.md > README.tmp
           sed "s|https://smokeshow.helpmanual.io/.*)/|${{ steps.smokeshow.outputs.COVERAGE_URL }}|g" README.tmp > README.md
           rm README.tmp
@@ -101,4 +103,4 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add README.md
           git commit -m "Update coverage badge" || echo "No changes to commit"
-          git push || echo "No changes to push"
+          git push origin $CURRENT_BRANCH || echo "No changes to push"
