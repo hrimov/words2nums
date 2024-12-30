@@ -35,12 +35,19 @@ jobs:
         run: |
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
-      - name: Generate coverage badge
+      - name: Upload coverage to smokeshow
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
         run: |
-          coverage-badge -f -o coverage.svg
-          sudo apt-get update
-          sudo apt-get install -y librsvg2-bin
-          rsvg-convert -h 30 coverage.svg > coverage.png
+          pip install smokeshow
+          smokeshow upload htmlcov
+
+      - name: Get coverage url
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: get_coverage_url
+        run: |
+          echo "COVERAGE_URL=$(cat .coverage-url)" >> $GITHUB_OUTPUT
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
@@ -75,7 +82,7 @@ jobs:
             |------|------------|---------|----------|
             ${filesCoverage.join('\n')}
 
-            [Full coverage report available in workflow artifacts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
+            [Full coverage report available on smokeshow](https://smokeshow.helpmanual.io/words2nums/latest/)
             `;
 
             github.rest.issues.createComment({
@@ -84,23 +91,3 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
-
-      - name: Commit and push coverage badge
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add coverage.svg coverage.png
-          git commit -m "Update coverage badges" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            htmlcov
-            coverage.xml
-            coverage.svg
-            coverage.png
-          retention-days: 7
