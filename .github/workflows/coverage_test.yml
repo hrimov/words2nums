@@ -36,7 +36,7 @@ jobs:
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
       - name: Upload coverage to smokeshow
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         env:
           SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
         run: |
@@ -44,7 +44,7 @@ jobs:
           smokeshow upload htmlcov
 
       - name: Get coverage url
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         id: get_coverage_url
         run: |
           echo "COVERAGE_URL=$(cat .coverage-url)" >> $GITHUB_OUTPUT
