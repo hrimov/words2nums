@@ -51,7 +51,7 @@ jobs:
               sha: context.sha,
               state: 'success',
               description: `coverage ${coverage}%`,
-              context: 'Coverage'
+              context: 'coverage'
             });
 
       - name: Upload coverage to smokeshow
