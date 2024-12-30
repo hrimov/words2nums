@@ -4,6 +4,8 @@ module.exports = async ({ github, context, core }) => {
   const match = xml.match(/line-rate="([\d.]+)"/);
   const coverage = match ? Math.round(parseFloat(match[1]) * 100) : 0;
   
+  const target_url = process.env.COVERAGE_URL.replace('go to ', '');
+  
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -11,6 +13,6 @@ module.exports = async ({ github, context, core }) => {
     state: 'success',
     description: `coverage ${coverage}%`,
     context: 'coverage',
-    target_url: process.env.COVERAGE_URL
+    target_url: target_url
   });
 };
