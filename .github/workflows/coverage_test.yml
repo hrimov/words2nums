@@ -41,7 +41,7 @@ jobs:
         id: smokeshow
         run: |
           pip install smokeshow
-          COVERAGE_URL=$(smokeshow upload htmlcov)
+          COVERAGE_URL=$(smokeshow upload htmlcov 2>&1 | tail -n1)
           echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
           
           # Extract coverage percentage from the HTML report
