@@ -81,7 +81,7 @@ jobs:
             |------|------------|---------|----------|
             ${filesCoverage.join('\n')}
 
-            [Full coverage report available on smokeshow](${{ steps.smokeshow.outputs.COVERAGE_URL }})
+            Full coverage report available on smokeshow - ${{ steps.smokeshow.outputs.COVERAGE_URL }}
             `;
 
             github.rest.issues.createComment({
