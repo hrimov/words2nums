@@ -100,9 +100,8 @@ jobs:
           git pull origin ${BRANCH_NAME}
           
           sed "s|coverage-[0-9]\+%25-brightgreen|coverage-${{ steps.smokeshow.outputs.COVERAGE }}%25-brightgreen|g" README.md > README.tmp
-          sed "s|smokeshow\.helpmanual\.io/[^)]*|smokeshow.helpmanual.io/${{ steps.smokeshow.outputs.COVERAGE_URL }}|g" README.tmp > README.md2
-          sed 's|go to ||g' README.md2 > README.md
-          rm README.tmp README.md2
+          sed "s|(https://smokeshow\.helpmanual\.io/[^)]*)|(${steps.smokeshow.outputs.COVERAGE_URL})|g" README.tmp > README.md
+          rm README.tmp
           
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
