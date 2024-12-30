@@ -36,16 +36,18 @@ jobs:
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
       - name: Upload coverage to smokeshow
+        if: github.event_name == 'push'
         env:
           SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+        id: smokeshow
         run: |
           pip install smokeshow
-          smokeshow upload htmlcov
-
-      - name: Get coverage url
-        id: get_coverage_url
-        run: |
-          echo "COVERAGE_URL=$(cat .coverage-url)" >> $GITHUB_OUTPUT
+          COVERAGE_URL=$(smokeshow upload htmlcov)
+          echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
+          
+          # Extract coverage percentage from the HTML report
+          COVERAGE=$(grep -o '<span class="pc_cov">.*%</span>' htmlcov/index.html | grep -o '[0-9]\+' | head -1)
+          echo "COVERAGE=$COVERAGE" >> "$GITHUB_OUTPUT"
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
@@ -80,7 +82,7 @@ jobs:
             |------|------------|---------|----------|
             ${filesCoverage.join('\n')}
 
-            [Full coverage report available on smokeshow](https://smokeshow.helpmanual.io/words2nums/latest/)
+            [Full coverage report available on smokeshow](${{ steps.smokeshow.outputs.COVERAGE_URL }})
             `;
 
             github.rest.issues.createComment({
