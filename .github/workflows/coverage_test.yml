@@ -90,3 +90,15 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
+
+      - name: Update README badge
+        run: |
+          sed "s|coverage-.*%25-brightgreen|coverage-${{ steps.smokeshow.outputs.COVERAGE }}%25-brightgreen|g" README.md > README.tmp
+          sed "s|https://smokeshow.helpmanual.io/.*)/|${{ steps.smokeshow.outputs.COVERAGE_URL }}|g" README.tmp > README.md
+          rm README.tmp
+          
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "Update coverage badge" || echo "No changes to commit"
+          git push || echo "No changes to push"
