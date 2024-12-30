@@ -72,42 +72,9 @@ jobs:
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        env:
+          COVERAGE_URL: ${{ steps.smokeshow.outputs.COVERAGE_URL }}
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            const indexHtml = fs.readFileSync('htmlcov/index.html', 'utf8');
-
-            const totalMatch = indexHtml.match(/<span class="pc_cov">([\d.]+)%<\/span>/);
-            const totalCoverage = totalMatch ? totalMatch[1] : 'N/A';
-
-            const fileRegex = /<tr class="region">.*?<td class="name left"><a href="[^"]+">([^<]+)<\/a><\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td class="right"[^>]*>([\d.]+)%<\/td>.*?<\/tr>/gs;
-            let filesCoverage = [];
-            let match;
-
-            while ((match = fileRegex.exec(indexHtml)) !== null) {
-              const [_, file, statements, missing, excluded, coverage] = match;
-              if (!file.includes('__init__')) {
-                const shortFile = file.replace('src/words2nums/', '');
-                filesCoverage.push(`| ${shortFile} | ${statements} | ${missing} | ${coverage}% |`);
-              }
-            }
-
-            const body = `## Coverage Report
-            Total coverage: ${totalCoverage}%
-
-            ### Coverage by file
-            | File | Statements | Missing | Coverage |
-            |------|------------|---------|----------|
-            ${filesCoverage.join('\n')}
-
-            Full coverage report available on smokeshow - ${{ steps.smokeshow.outputs.COVERAGE_URL }}
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+            const script = require('./.github/scripts/comment-pr.js')
+            await script({github, context, core})
