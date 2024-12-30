@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  statuses: write
 
 jobs:
   coverage:
@@ -35,68 +36,35 @@ jobs:
         run: |
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
-      - name: Generate coverage badge
+      - name: Upload coverage to smokeshow
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+        id: smokeshow
         run: |
-          coverage-badge -f -o coverage.svg
+          pip install smokeshow
+          COVERAGE_URL=$(smokeshow upload htmlcov 2>&1 | tail -n1)
+          echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
+          
+          # Extract coverage percentage from the HTML report
+          COVERAGE=$(grep -o '<span class="pc_cov">.*%</span>' htmlcov/index.html | grep -o '[0-9]\+' | head -1)
+          echo "COVERAGE=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Create coverage status
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        env:
+          COVERAGE_URL: ${{ steps.smokeshow.outputs.COVERAGE_URL }}
+        with:
+          script: |
+            const script = require('./.github/scripts/create-coverage-status.js')
+            await script({github, context, core})
 
       - name: Comment PR with coverage info
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        env:
+          COVERAGE_URL: ${{ steps.smokeshow.outputs.COVERAGE_URL }}
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            const indexHtml = fs.readFileSync('htmlcov/index.html', 'utf8');
-
-            const totalMatch = indexHtml.match(/<span class="pc_cov">([\d.]+)%<\/span>/);
-            const totalCoverage = totalMatch ? totalMatch[1] : 'N/A';
-
-            const fileRegex = /<tr class="region">.*?<td class="name left"><a href="[^"]+">([^<]+)<\/a><\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td>(\d+)<\/td>.*?<td class="right"[^>]*>([\d.]+)%<\/td>.*?<\/tr>/gs;
-            let filesCoverage = [];
-            let match;
-
-            while ((match = fileRegex.exec(indexHtml)) !== null) {
-              const [_, file, statements, missing, excluded, coverage] = match;
-              if (!file.includes('__init__')) {
-                const shortFile = file.replace('src/words2nums/', '');
-                filesCoverage.push(`| ${shortFile} | ${statements} | ${missing} | ${coverage}% |`);
-              }
-            }
-
-            const body = `## Coverage Report
-            Total coverage: ${totalCoverage}%
-
-            ### Coverage by file
-            | File | Statements | Missing | Coverage |
-            |------|------------|---------|----------|
-            ${filesCoverage.join('\n')}
-
-            [Full coverage report available in workflow artifacts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-
-      - name: Commit and push coverage badge
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add coverage.svg
-          git commit -m "Update coverage badge" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            htmlcov
-            coverage.xml
-            coverage.svg
-          retention-days: 7
+            const script = require('./.github/scripts/comment-pr.js')
+            await script({github, context, core})

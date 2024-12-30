@@ -18,3 +18,8 @@ __pycache__/
 # IDE-specific
 .idea/
 .vscode/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
