@@ -35,18 +35,12 @@ jobs:
         run: |
           pytest -v --cov=src/words2nums --cov-report=xml --cov-report=html --cov-fail-under=80
 
-      - name: Get smokeshow key
-        id: smokeshow_key
-        run: |
-          pip install smokeshow
-          SMOKESHOW_KEY=$(curl -sSL https://smokeshow.helpmanual.io/get-key/ | python -)
-          echo "SMOKESHOW_KEY=$SMOKESHOW_KEY" >> "$GITHUB_OUTPUT"
-
       - name: Upload coverage to smokeshow
         env:
-          SMOKESHOW_AUTH_KEY: ${{ steps.smokeshow_key.outputs.SMOKESHOW_KEY }}
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
         id: smokeshow
         run: |
+          pip install smokeshow
           COVERAGE_URL=$(smokeshow upload htmlcov)
           echo "COVERAGE_URL=$COVERAGE_URL" >> "$GITHUB_OUTPUT"
           
