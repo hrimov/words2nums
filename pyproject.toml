@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "words2nums"
-version = "0.1.1"
+version = "0.1.2"
 readme = "README.md"
 description = "Lightweight words to number converter with several locales support"
 license = { text = "Apache-2.0" }

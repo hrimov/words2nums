@@ -89,8 +89,8 @@ Full documentation is available at [https://words2nums.readthedocs.io/](https://
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](https://github.com/hrimov/words2nums/blob/main/CONTRIBUTING.md) for details.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](https://github.com/hrimov/words2nums/blob/main/LICENSE) file for details.

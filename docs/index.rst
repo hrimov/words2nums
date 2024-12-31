@@ -11,7 +11,13 @@ words2nums is a Python library that converts word-form numbers (like "twenty-thr
    usage
    api
    contributing
-   changelog
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Project Links:
+
+   GitHub <https://github.com/hrimov/words2nums>
+   PyPi <https://pypi.org/project/words2nums/>
 
 Features
 --------
@@ -40,4 +46,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
