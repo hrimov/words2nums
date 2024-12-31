@@ -35,7 +35,7 @@ Development Setup
 
    .. code-block:: bash
 
-      git clone https://github.com/hrimov/words2nums.git
+      git clone https://github.com/<your-username>/words2nums.git
       cd words2nums
 
 2. Create a virtual environment:
