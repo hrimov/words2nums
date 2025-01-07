@@ -1,66 +1,43 @@
-# English number grammar
-# Supports numbers up to trillion and ordinal numbers
+// Terminals
+%import common.WS
+%ignore WS
 
-number[number_ty]:
-    | cardinal_number
-    | ordinal_number
-    | floating_point_number
+// Basic tokens
+DIGIT: "zero" | "one" | "two" | "three" | "four" | "five" | "six" | "seven" | "eight" | "nine"
+TEEN: "eleven" | "twelve" | "thirteen" | "fourteen" | "fifteen" | "sixteen" | "seventeen" | "eighteen" | "nineteen"
+TEN: "ten" | "twenty" | "thirty" | "forty" | "fifty" | "sixty" | "seventy" | "eighty" | "ninety"
+MAGNITUDE: "hundred" | "thousand" | "million" | "billion" | "trillion"
+ORDINAL: "first" | "second" | "third" | "fourth" | "fifth" | "sixth" | "seventh" | "eighth" | "ninth" | "tenth"
+POINT: "point"
 
-# Cardinal numbers
-# --------------
-cardinal_number[number_ty]:
-    | trillions
-    | billions
-    | millions
-    | thousands
-    | hundreds
-    | tens
-    | ones
+// Grammar rules
+start: number
 
-trillions[number_ty]:
-    | t=trillion_number "trillion" b=[billions] { _make_trillions(t, b) }
-    | t=trillion_number "trillion" { _make_trillions(t, None) }
+number: cardinal_number
+      | ordinal_number
+      | floating_point_number
 
-billions[number_ty]:
-    | b=billion_number "billion" m=[millions] { _make_billions(b, m) }
-    | b=billion_number "billion" { _make_billions(b, None) }
+cardinal_number: simple_number
+               | magnitude_number
 
-millions[number_ty]:
-    | m=million_number "million" t=[thousands] { _make_millions(m, t) }
-    | m=million_number "million" { _make_millions(m, None) }
+simple_number: DIGIT
+            | TEEN
+            | TEN
+            | TEN DIGIT
 
-thousands[number_ty]:
-    | t=thousand_number "thousand" h=[hundreds] { _make_thousands(t, h) }
-    | t=thousand_number "thousand" { _make_thousands(t, None) }
+magnitude_number: simple_number MAGNITUDE
+                | simple_number MAGNITUDE simple_number
+                | simple_number MAGNITUDE magnitude_number
+                | magnitude_number MAGNITUDE
+                | magnitude_number MAGNITUDE simple_number
+                | magnitude_number MAGNITUDE magnitude_number
+                | simple_number "hundred"
+                | simple_number "hundred" simple_number
+                | simple_number "hundred" magnitude_number
+                | magnitude_number "hundred" simple_number
+                | magnitude_number "hundred" magnitude_number
 
-hundreds[number_ty]:
-    | h=hundred_number "hundred" t=[tens] { _make_hundreds(h, t) }
-    | "hundred" t=[tens] { _make_hundreds(100, t) }
+ordinal_number: ORDINAL
+              | cardinal_number ORDINAL
 
-tens[number_ty]:
-    | t=ten_digit o=[ones] { _make_tens(t, o) }
-    | special_tens
-
-# Ordinal numbers
-# -------------
-ordinal_number[number_ty]:
-    | cardinal_ordinal
-    | special_ordinal
-
-cardinal_ordinal[number_ty]:
-    | n=cardinal_number ordinal_suffix { _make_ordinal(n) }
-
-special_ordinal[number_ty]:
-    | "first" { _make_ordinal(1) }
-    | "second" { _make_ordinal(2) }
-    | "third" { _make_ordinal(3) }
-    | n=special_tens ordinal_suffix { _make_ordinal(n) }
-
-# Floating point numbers
-# -------------------
-floating_point_number[number_ty]:
-    | n=cardinal_number "point" d=decimal_part { _make_float(n, d) }
-
-decimal_part[number_ty]:
-    | d=ones more=[decimal_part] { _extend_decimal(d, more) }
-    | d=ones { d } 
+floating_point_number: cardinal_number POINT cardinal_number 

@@ -1,12 +1,16 @@
 import abc
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List, Sequence, Dict, Union
 
 from words2nums.core.types import NumberData, ReturnValue
 from words2nums.locales.english.tokenizer import (
     WORD_TO_VALUE_MAP,
     MAGNITUDE_MAP,
+    ORDINAL_TO_CARDINAL_MAP,
+    FLOAT_DIVIDER,
+    PUNCTUATION_TOKENS
 )
+from words2nums.core.exceptions import ParsingError
 
 
 @dataclass
@@ -78,66 +82,191 @@ class EnglishTreeBuilder(TreeBuilder):
     """Builds tree structures from English number words"""
 
     def build_tree(self, tokens: List[str]) -> NumberNode:
-        """Build a tree from tokens"""
+        """Build a number tree from tokens"""
+        print(f"Building tree for tokens: {tokens}")  # Debug print
+        
         if not tokens:
             return DigitNode(0)
 
-        # First find the highest magnitude (thousand, million, etc.)
-        max_magnitude = 0
-        max_magnitude_idx = -1
+        # Handle single ordinal number
+        if len(tokens) == 1 and tokens[0] in ORDINAL_TO_CARDINAL_MAP:
+            return OrdinalNode(DigitNode(ORDINAL_TO_CARDINAL_MAP[tokens[0]]))
+
+        # Check if the last token is ordinal
+        is_ordinal = tokens[-1] in ORDINAL_TO_CARDINAL_MAP
+
+        # Convert ordinal to cardinal if needed
+        if is_ordinal:
+            # Convert ordinal to cardinal
+            cardinal_value = ORDINAL_TO_CARDINAL_MAP[tokens[-1]]
+            for word, value in WORD_TO_VALUE_MAP.items():
+                if value == cardinal_value:
+                    tokens = tokens[:-1] + [word]
+                    break
+
+        # Handle decimal numbers
+        if FLOAT_DIVIDER in tokens:
+            point_idx = tokens.index(FLOAT_DIVIDER)
+            whole_tokens = tokens[:point_idx]
+            fraction_tokens = tokens[point_idx + 1:]
+            
+            # Parse whole part
+            whole = self.build_tree(whole_tokens)
+            
+            # Parse fraction part
+            fraction = []
+            for token in fraction_tokens:
+                if token in WORD_TO_VALUE_MAP:
+                    fraction.append(DigitNode(WORD_TO_VALUE_MAP[token]))
+                else:
+                    raise ParsingError(f"Invalid decimal part: {token}")
+            
+            return DecimalNode(whole=whole, fraction=fraction)
+
+        # Handle magnitude words (hundred, thousand, million, etc.)
+        # Process magnitudes from largest to smallest
+        magnitudes = sorted(MAGNITUDE_MAP.keys(), key=lambda x: MAGNITUDE_MAP[x], reverse=True)
         
-        for i, token in enumerate(tokens):
-            if token in MAGNITUDE_MAP and token != "hundred":  # Skip a hundred for now
-                magnitude = MAGNITUDE_MAP[token]
-                if magnitude > max_magnitude:
-                    max_magnitude = magnitude
-                    max_magnitude_idx = i
-
-        if max_magnitude_idx != -1:
-            # Process highest magnitude first
-            left_tokens = tokens[:max_magnitude_idx]
-            magnitude_value = MAGNITUDE_MAP[tokens[max_magnitude_idx]]  # Get numeric value
-            right_tokens = tokens[max_magnitude_idx + 1:]
-
-            # Handle base number (default to 1 if no left tokens)
-            base = self.build_tree(left_tokens) if left_tokens else DigitNode(1)
-            magnitude_node = MagnitudeNode(base=base, multiplier=magnitude_value)
-
-            if right_tokens:
-                right_node = self.build_tree(right_tokens)
-                return CompoundNode([magnitude_node, right_node])
-
-            return magnitude_node
-
-        # Then handle hundreds
-        hundred_idx = -1
-        for i, token in enumerate(tokens):
-            if token == "hundred":
-                hundred_idx = i
+        # Check for consecutive duplicate magnitudes and invalid combinations
+        last_magnitude_value = float('inf')
+        last_magnitude_group = float('inf')  # Track magnitude groups (millions, thousands, hundreds)
+        last_non_magnitude_index = -1  # Track the last non-magnitude word
+        last_magnitude_index = -1  # Track the last magnitude word
+        last_number_index = -1  # Track the last number word
+        last_number_value = 0  # Track the value of the last number
+        
+        for i in range(len(tokens) - 1):
+            # Check for consecutive duplicate magnitudes
+            if tokens[i] in MAGNITUDE_MAP and tokens[i] == tokens[i + 1]:
+                raise ParsingError(f"Invalid combination: consecutive magnitude '{tokens[i]}'")
+            
+            # Check for invalid combinations like "twenty hundred"
+            if tokens[i] in WORD_TO_VALUE_MAP and tokens[i + 1] in MAGNITUDE_MAP:
+                value = WORD_TO_VALUE_MAP[tokens[i]]
+                if value >= 20:  # Numbers 20 and above can't be used with magnitudes
+                    raise ParsingError(f"Invalid combination: cannot use '{tokens[i]}' with magnitude '{tokens[i + 1]}'")
+            
+            # Check for consecutive numbers without magnitude words
+            if tokens[i] in WORD_TO_VALUE_MAP:
+                current_value = WORD_TO_VALUE_MAP[tokens[i]]
+                if last_number_index >= 0 and i == last_number_index + 1 and tokens[i + 1] not in MAGNITUDE_MAP:
+                    # Allow combinations like "twenty one" where first number is a multiple of 10 and second is less than 10
+                    if not (last_number_value % 10 == 0 and last_number_value >= 20 and current_value < 10):
+                        raise ParsingError(f"Invalid combination: consecutive numbers without magnitude")
+                last_number_index = i
+                last_number_value = current_value
+            
+            # Reset magnitude tracking when we encounter a non-magnitude word
+            if tokens[i] not in MAGNITUDE_MAP:
+                last_non_magnitude_index = i
+                if i > 0 and tokens[i - 1] not in MAGNITUDE_MAP and i < len(tokens) - 1 and tokens[i + 1] in MAGNITUDE_MAP:
+                    # Reset magnitude tracking only if we're starting a new number group
+                    last_magnitude_value = float('inf')
+                    last_magnitude_group = float('inf')
+            # Check for invalid magnitude order within the same group
+            elif tokens[i] in MAGNITUDE_MAP:
+                current_magnitude = MAGNITUDE_MAP[tokens[i]]
+                current_group = current_magnitude // 1000 if current_magnitude >= 1000 else 0
+                
+                # Check if we have a magnitude word after a smaller magnitude in the same group
+                if last_magnitude_index >= 0 and i - last_magnitude_index == 2:
+                    prev_magnitude = MAGNITUDE_MAP[tokens[last_magnitude_index]]
+                    if current_magnitude > prev_magnitude:
+                        raise ParsingError(f"Invalid combination: cannot use larger magnitude '{tokens[i]}' after smaller magnitude '{tokens[last_magnitude_index]}'")
+                
+                # Only check order if we're in the same group and there was no non-magnitude word between
+                if current_group == last_magnitude_group and i > last_non_magnitude_index + 1:
+                    if current_magnitude >= last_magnitude_value:
+                        raise ParsingError(f"Invalid combination: magnitudes in the same group must be in descending order")
+                
+                last_magnitude_value = current_magnitude
+                last_magnitude_group = current_group
+                last_magnitude_index = i
+        
+        # Check the last token
+        if tokens[-1] in WORD_TO_VALUE_MAP:
+            current_value = WORD_TO_VALUE_MAP[tokens[-1]]
+            if last_number_index >= 0 and len(tokens) - 1 == last_number_index + 1:
+                # Allow combinations like "twenty one" where first number is a multiple of 10 and second is less than 10
+                if not (last_number_value % 10 == 0 and last_number_value >= 20 and current_value < 10):
+                    raise ParsingError(f"Invalid combination: consecutive numbers without magnitude")
+        elif tokens[-1] in MAGNITUDE_MAP:
+            current_magnitude = MAGNITUDE_MAP[tokens[-1]]
+            current_group = current_magnitude // 1000 if current_magnitude >= 1000 else 0
+            
+            # Check if we have a magnitude word after a smaller magnitude in the same group
+            if last_magnitude_index >= 0 and len(tokens) - 1 - last_magnitude_index == 2:
+                prev_magnitude = MAGNITUDE_MAP[tokens[last_magnitude_index]]
+                if current_magnitude > prev_magnitude:
+                    raise ParsingError(f"Invalid combination: cannot use larger magnitude '{tokens[-1]}' after smaller magnitude '{tokens[last_magnitude_index]}'")
+            
+            # Only check order if we're in the same group and there was no non-magnitude word between
+            if current_group == last_magnitude_group and len(tokens) - 1 > last_non_magnitude_index + 1:
+                if current_magnitude >= last_magnitude_value:
+                    raise ParsingError(f"Invalid combination: magnitudes in the same group must be in descending order")
+        
+        # First find the largest magnitude
+        max_magnitude = None
+        max_magnitude_idx = -1
+        for magnitude in magnitudes:
+            if magnitude in tokens:
+                max_magnitude = magnitude
+                max_magnitude_idx = tokens.index(magnitude)
                 break
-
-        if hundred_idx != -1:
-            # Process a "hundred" part
-            left_tokens = tokens[:hundred_idx]
-            right_tokens = tokens[hundred_idx + 1:]
+                
+        if max_magnitude is not None:
+            print(f"Found magnitude {max_magnitude} at index {max_magnitude_idx}")  # Debug print
             
-            # Handle base number (default to 1 if no left tokens)
-            base = self.parse_basic_number(left_tokens) if left_tokens else DigitNode(1)
-            hundred_node = MagnitudeNode(base=base, multiplier=100)
+            # Get the base number (before magnitude)
+            if max_magnitude_idx > 0:
+                base = self.parse_basic_number(tokens[:max_magnitude_idx])
+                print(f"Base before {max_magnitude}: {base.evaluate()}")  # Debug print
+            else:
+                base = DigitNode(1)  # Default to 1 if no base specified
+                print(f"Using default base 1 for {max_magnitude}")  # Debug print
             
-            if right_tokens:
-                right_node = self.parse_basic_number(right_tokens)
-                return CompoundNode([hundred_node, right_node])
-            return hundred_node
+            # Create magnitude node
+            magnitude_value = MAGNITUDE_MAP[max_magnitude]
+            magnitude_node = MagnitudeNode(base=base, multiplier=magnitude_value)
+            print(f"Created magnitude node: {magnitude_node.evaluate()}")  # Debug print
+            
+            # If there are more tokens after magnitude, process them recursively
+            if max_magnitude_idx < len(tokens) - 1:
+                rest = self.build_tree(tokens[max_magnitude_idx + 1:])
+                print(f"Rest after {max_magnitude}: {rest.evaluate()}")  # Debug print
+                result = CompoundNode([magnitude_node, rest])
+                return OrdinalNode(result) if is_ordinal else result
+            
+            result = magnitude_node
+            return OrdinalNode(result) if is_ordinal else result
 
-        # Finally handle basic numbers
-        return self.parse_basic_number(tokens)
+        # If no magnitude words found, parse as basic number
+        result = self.parse_basic_number(tokens)
+        return OrdinalNode(result) if is_ordinal else result
 
-    # noinspection PyMethodMayBeStatic
     def parse_basic_number(self, tokens: List[str]) -> NumberNode:
         """Parse basic numbers without magnitude words"""
+        print(f"Parsing basic number from tokens: {tokens}")  # Debug print
+        
         if not tokens:
             return DigitNode(0)
+
+        # Handle magnitude words
+        for magnitude in MAGNITUDE_MAP:
+            if magnitude in tokens:
+                idx = tokens.index(magnitude)
+                if idx > 0:
+                    base = self.parse_basic_number(tokens[:idx])
+                else:
+                    base = DigitNode(1)
+                
+                magnitude_node = MagnitudeNode(base=base, multiplier=MAGNITUDE_MAP[magnitude])
+                
+                if idx < len(tokens) - 1:
+                    rest = self.parse_basic_number(tokens[idx + 1:])
+                    return CompoundNode([magnitude_node, rest])
+                
+                return magnitude_node
 
         parts: List[NumberNode] = []
         current_value = 0
@@ -145,19 +274,35 @@ class EnglishTreeBuilder(TreeBuilder):
         for token in tokens:
             if token in WORD_TO_VALUE_MAP:
                 value = WORD_TO_VALUE_MAP[token]
+                print(f"Processing token {token} with value {value}")  # Debug print
                 if 20 <= value <= 90:  # tens
                     if current_value:
                         parts.append(DigitNode(current_value))
+                        current_value = 0
                     parts.append(TensNode(value))
-                    current_value = 0
                 else:
                     current_value += value
+            elif token in ORDINAL_TO_CARDINAL_MAP:
+                # If this is part of a compound number, treat it as cardinal
+                value = ORDINAL_TO_CARDINAL_MAP[token]
+                if 20 <= value <= 90:  # tens
+                    if current_value:
+                        parts.append(DigitNode(current_value))
+                        current_value = 0
+                    parts.append(TensNode(value))
+                else:
+                    current_value += value
+            elif token not in PUNCTUATION_TOKENS:
+                raise ParsingError(f"Unknown token: {token}")
 
         if current_value:
             parts.append(DigitNode(current_value))
 
-        # Handle empty parts list
+        print(f"Basic number result: {sum(part.evaluate() for part in parts)}")  # Debug print
+
         if not parts:
             return DigitNode(0)
-            
-        return CompoundNode(parts) if len(parts) > 1 else parts[0]
+        elif len(parts) == 1:
+            return parts[0]
+        else:
+            return CompoundNode(parts)

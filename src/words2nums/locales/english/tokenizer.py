@@ -59,14 +59,26 @@ VALID_TOKENS = set(
 class EnglishTokenizer(Tokenizer):
     def tokenize(self, text: str) -> List[str]:
         tokens = text.lower().split(" ")
+        print(f"Initial tokens: {tokens}")  # Debug print
 
         for idx, token in enumerate(tokens):
             if HYPHEN in token:
                 t1, t2 = token.split(HYPHEN)
+                if t1 in WORD_TO_VALUE_MAP and t2 in ORDINAL_TO_CARDINAL_MAP:
+                    continue
                 tokens[idx] = t1
                 tokens.insert(idx + 1, t2)
+        
+        print(f"Final tokens: {tokens}")  # Debug print
         return tokens
 
     def validate(self, text: str) -> bool:
         tokens = self.tokenize(text)
-        return all([token in VALID_TOKENS for token in tokens])
+        for token in tokens:
+            if HYPHEN in token:
+                t1, t2 = token.split(HYPHEN)
+                if t1 in WORD_TO_VALUE_MAP and t2 in ORDINAL_TO_CARDINAL_MAP:
+                    continue
+            if token not in VALID_TOKENS:
+                return False
+        return True
