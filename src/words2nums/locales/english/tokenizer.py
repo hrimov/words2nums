@@ -27,12 +27,20 @@ WORD_TO_VALUE_MAP = {
 
 MAGNITUDE_MAP = {
     "hundred": 100,
-    "thousand": 1000,
-    "million": 1_000_000
+    "thousand": 1_000,
+    "million": 1_000_000,
+    "billion": 1_000_000_000,
+    "trillion": 1_000_000_000_000
 }
 
 
-ORDINAL_MAGNITUDE_TOKENS = {"hundredth", "thousandth", "millionth"}
+ORDINAL_MAGNITUDE_TOKENS = {
+    "hundredth", 
+    "thousandth", 
+    "millionth",
+    "billionth",
+    "trillionth"
+}
 PUNCTUATION_TOKENS = {"and"}
 
 
