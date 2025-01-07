@@ -59,7 +59,6 @@ VALID_TOKENS = set(
 class EnglishTokenizer(Tokenizer):
     def tokenize(self, text: str) -> List[str]:
         tokens = text.lower().split(" ")
-        print(f"Initial tokens: {tokens}")  # Debug print
 
         for idx, token in enumerate(tokens):
             if HYPHEN in token:
@@ -69,7 +68,6 @@ class EnglishTokenizer(Tokenizer):
                 tokens[idx] = t1
                 tokens.insert(idx + 1, t2)
         
-        print(f"Final tokens: {tokens}")  # Debug print
         return tokens
 
     def validate(self, text: str) -> bool:

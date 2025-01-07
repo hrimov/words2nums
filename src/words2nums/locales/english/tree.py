@@ -83,7 +83,6 @@ class EnglishTreeBuilder(TreeBuilder):
 
     def build_tree(self, tokens: List[str]) -> NumberNode:
         """Build a number tree from tokens"""
-        print(f"Building tree for tokens: {tokens}")  # Debug print
         
         if not tokens:
             return DigitNode(0)
@@ -215,25 +214,19 @@ class EnglishTreeBuilder(TreeBuilder):
                 break
                 
         if max_magnitude is not None:
-            print(f"Found magnitude {max_magnitude} at index {max_magnitude_idx}")  # Debug print
-            
             # Get the base number (before magnitude)
             if max_magnitude_idx > 0:
                 base = self.parse_basic_number(tokens[:max_magnitude_idx])
-                print(f"Base before {max_magnitude}: {base.evaluate()}")  # Debug print
             else:
                 base = DigitNode(1)  # Default to 1 if no base specified
-                print(f"Using default base 1 for {max_magnitude}")  # Debug print
-            
+
             # Create magnitude node
             magnitude_value = MAGNITUDE_MAP[max_magnitude]
             magnitude_node = MagnitudeNode(base=base, multiplier=magnitude_value)
-            print(f"Created magnitude node: {magnitude_node.evaluate()}")  # Debug print
-            
+
             # If there are more tokens after magnitude, process them recursively
             if max_magnitude_idx < len(tokens) - 1:
                 rest = self.build_tree(tokens[max_magnitude_idx + 1:])
-                print(f"Rest after {max_magnitude}: {rest.evaluate()}")  # Debug print
                 result = CompoundNode([magnitude_node, rest])
                 return OrdinalNode(result) if is_ordinal else result
             
@@ -246,8 +239,7 @@ class EnglishTreeBuilder(TreeBuilder):
 
     def parse_basic_number(self, tokens: List[str]) -> NumberNode:
         """Parse basic numbers without magnitude words"""
-        print(f"Parsing basic number from tokens: {tokens}")  # Debug print
-        
+
         if not tokens:
             return DigitNode(0)
 
@@ -274,7 +266,6 @@ class EnglishTreeBuilder(TreeBuilder):
         for token in tokens:
             if token in WORD_TO_VALUE_MAP:
                 value = WORD_TO_VALUE_MAP[token]
-                print(f"Processing token {token} with value {value}")  # Debug print
                 if 20 <= value <= 90:  # tens
                     if current_value:
                         parts.append(DigitNode(current_value))
@@ -297,8 +288,6 @@ class EnglishTreeBuilder(TreeBuilder):
 
         if current_value:
             parts.append(DigitNode(current_value))
-
-        print(f"Basic number result: {sum(part.evaluate() for part in parts)}")  # Debug print
 
         if not parts:
             return DigitNode(0)
