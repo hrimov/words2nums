@@ -1,0 +1,43 @@
+// Terminals
+%import common.WS
+%ignore WS
+
+// Basic tokens
+DIGIT: "zero" | "one" | "two" | "three" | "four" | "five" | "six" | "seven" | "eight" | "nine"
+TEEN: "eleven" | "twelve" | "thirteen" | "fourteen" | "fifteen" | "sixteen" | "seventeen" | "eighteen" | "nineteen"
+TEN: "ten" | "twenty" | "thirty" | "forty" | "fifty" | "sixty" | "seventy" | "eighty" | "ninety"
+MAGNITUDE: "hundred" | "thousand" | "million" | "billion" | "trillion"
+ORDINAL: "first" | "second" | "third" | "fourth" | "fifth" | "sixth" | "seventh" | "eighth" | "ninth" | "tenth"
+POINT: "point"
+
+// Grammar rules
+start: number
+
+number: cardinal_number
+      | ordinal_number
+      | floating_point_number
+
+cardinal_number: simple_number
+               | magnitude_number
+
+simple_number: DIGIT
+            | TEEN
+            | TEN
+            | TEN DIGIT
+
+magnitude_number: simple_number MAGNITUDE
+                | simple_number MAGNITUDE simple_number
+                | simple_number MAGNITUDE magnitude_number
+                | magnitude_number MAGNITUDE
+                | magnitude_number MAGNITUDE simple_number
+                | magnitude_number MAGNITUDE magnitude_number
+                | simple_number "hundred"
+                | simple_number "hundred" simple_number
+                | simple_number "hundred" magnitude_number
+                | magnitude_number "hundred" simple_number
+                | magnitude_number "hundred" magnitude_number
+
+ordinal_number: ORDINAL
+              | cardinal_number ORDINAL
+
+floating_point_number: cardinal_number POINT cardinal_number 

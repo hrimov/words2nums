@@ -27,12 +27,20 @@ WORD_TO_VALUE_MAP = {
 
 MAGNITUDE_MAP = {
     "hundred": 100,
-    "thousand": 1000,
-    "million": 1_000_000
+    "thousand": 1_000,
+    "million": 1_000_000,
+    "billion": 1_000_000_000,
+    "trillion": 1_000_000_000_000
 }
 
 
-ORDINAL_MAGNITUDE_TOKENS = {"hundredth", "thousandth", "millionth"}
+ORDINAL_MAGNITUDE_TOKENS = {
+    "hundredth", 
+    "thousandth", 
+    "millionth",
+    "billionth",
+    "trillionth"
+}
 PUNCTUATION_TOKENS = {"and"}
 
 
@@ -55,10 +63,20 @@ class EnglishTokenizer(Tokenizer):
         for idx, token in enumerate(tokens):
             if HYPHEN in token:
                 t1, t2 = token.split(HYPHEN)
+                if t1 in WORD_TO_VALUE_MAP and t2 in ORDINAL_TO_CARDINAL_MAP:
+                    continue
                 tokens[idx] = t1
                 tokens.insert(idx + 1, t2)
+        
         return tokens
 
     def validate(self, text: str) -> bool:
         tokens = self.tokenize(text)
-        return all([token in VALID_TOKENS for token in tokens])
+        for token in tokens:
+            if HYPHEN in token:
+                t1, t2 = token.split(HYPHEN)
+                if t1 in WORD_TO_VALUE_MAP and t2 in ORDINAL_TO_CARDINAL_MAP:
+                    continue
+            if token not in VALID_TOKENS:
+                return False
+        return True

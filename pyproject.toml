@@ -46,3 +46,6 @@ test = [
 "Homepage" = "https://github.com/hrimov/words2nums"
 "Documentation" = "https://words2nums.readthedocs.io"
 "Bug Tracker" = "https://github.com/hrimov/words2nums/issues"
+
+[tool.poetry.dependencies]
+lark = "^1.1.5"
