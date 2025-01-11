@@ -1,10 +1,12 @@
 # words2nums
 
-Convert word-form numbers to numerical values in Python.
-
 [![PyPI version](https://img.shields.io/pypi/v/words2nums)](https://pypi.org/project/words2nums/)
 [![Coverage](https://coverage-badge.samuelcolvin.workers.dev/hrimov/words2nums.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/hrimov/words2nums)
 [![Documentation Status](https://readthedocs.org/projects/words2nums/badge/?version=latest)](https://words2nums.readthedocs.io)
+
+Convert word-form numbers to numerical values in Python.
+
+> ⚠️ **Warning**: This project is a work in progress. Until there is 1.X.Y release, expect breaking changes. The API is not stable and the project serves as a playground for ideas and experimentation. ⚠️
 
 ## Features
 
