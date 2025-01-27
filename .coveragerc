@@ -1,9 +1,12 @@
 [run]
-source = src/words2nums
-omit =
+source = src
+parallel = False
+data_file = .coverage
+omit = 
+    */generated_parser.py
+    */__pycache__/*
     */tests/*
-    */venv/*
-    setup.py
+    */.pytest_cache/*
 
 [report]
 exclude_lines =
@@ -18,4 +21,5 @@ exclude_lines =
 precision = 2
 fail_under = 80
 
-per_file_fail_under = 80
+[html]
+directory = coverage_html
